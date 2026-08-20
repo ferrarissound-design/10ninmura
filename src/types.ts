@@ -57,7 +57,12 @@ export type MemoryType =
   | 'betrayed_by'
   | 'rival_approached_crush'
   | 'heard_gossip_about'
-  | 'cheerful_chat_with';
+  | 'cheerful_chat_with'
+  | 'witnessed_incident'
+  | 'accused_by'
+  | 'defended_by'
+  | 'voted_against'
+  | 'wrongly_accused';
 
 export interface MemoryEntry {
   id: string;
@@ -119,4 +124,47 @@ export interface EventLogEntry {
   text: string;
   major: boolean;
   npcIds: NpcId[];
+}
+
+export type VillageIncidentKind = 'food_theft' | 'field_damage' | 'shared_fund_loss';
+export type IncidentPhase = 'investigation' | 'meeting' | 'resolved';
+export type TestimonyTruth = 'fact' | 'mistake' | 'lie';
+
+export interface VillageTestimony {
+  id: string;
+  witnessId: NpcId;
+  suspectId: NpcId;
+  truth: TestimonyTruth;
+  reliability: number;
+  text: string;
+  shared: boolean;
+}
+
+export interface VillageVote {
+  voterId: NpcId;
+  suspectId: NpcId;
+  confidence: number;
+}
+
+export interface VillageIncident {
+  id: string;
+  kind: VillageIncidentKind;
+  title: string;
+  description: string;
+  culpritId: NpcId;
+  startedTick: number;
+  meetingTick: number;
+  resolvedTick: number | null;
+  phase: IncidentPhase;
+  testimonies: VillageTestimony[];
+  votes: VillageVote[];
+  accusedId: NpcId | null;
+  outcomeText: string | null;
+}
+
+export type SocialRole = 'mayor' | 'popular' | 'trusted' | 'outcast' | 'suspect';
+
+export interface SocialStatus {
+  reputation: number;
+  roles: SocialRole[];
 }

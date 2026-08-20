@@ -99,6 +99,16 @@ export const CONFIG = {
     jealousyHostilityThreshold: 45, // これを超えるとライバルへの敵意行動が増える
   },
 
+  incident: {
+    firstDay: 2,
+    intervalDaysMin: 3,
+    intervalDaysMax: 5,
+    investigationMinutes: 8 * 60,
+    testimonyShareIntervalMinutes: 75,
+    truthfulWitnesses: 1,
+    mistakenWitnesses: 2,
+  },
+
   personality: {
     min: 5,
     max: 95,

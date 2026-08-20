@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import { Rng, makeSeed } from '../rng';
 import { Npc } from '../npc/Npc';
-import type { NpcId } from '../types';
+import type { NpcId, VillageIncident } from '../types';
 import { generateVillageLayout, type VillageLayout } from './villageLayout';
 import { RelationshipMatrix } from './relationships';
 import { EventLog } from './eventLog';
@@ -13,6 +13,8 @@ import { updateBreakupCheck, updateCrushFormation } from './romance';
 import { decayMemories } from './memory';
 import { seedInitialRelationships } from './seeding';
 import { dayIndex } from './time';
+import { createVillageIncident, holdVillageMeeting, shareNextTestimony, type IncidentContext } from './incidents';
+import { initializeVillageRoles, updateSocialStanding } from './social';
 
 export class World {
   npcs: Npc[] = [];
@@ -22,10 +24,15 @@ export class World {
   rng: Rng;
   tick = 0; // ゲーム内経過分(絶対値)
   speedMultiplier = 1;
+  activeIncident: VillageIncident | null = null;
+  incidentHistory: VillageIncident[] = [];
 
   private lastDayProcessed = -1;
   private hourAccumulator = 0;
   private npcById: Map<NpcId, Npc> = new Map();
+  private nextIncidentTick = 0;
+  private lastTestimonyShareTick = 0;
+  private incidentSequence = 0;
 
   constructor(seed: number = makeSeed()) {
     this.rng = new Rng(seed);
@@ -41,6 +48,11 @@ export class World {
     this.tick = CONFIG.time.dayStartHour * 60;
     this.lastDayProcessed = dayIndex(this.tick);
     this.hourAccumulator = 0;
+    this.activeIncident = null;
+    this.incidentHistory = [];
+    this.incidentSequence = 0;
+    this.nextIncidentTick = (CONFIG.incident.firstDay - 1) * 24 * 60 + 10 * 60;
+    this.lastTestimonyShareTick = 0;
 
     this.layout = generateVillageLayout(CONFIG.npc.count, this.rng);
     this.npcs = [];
@@ -58,6 +70,8 @@ export class World {
 
     this.relationships.init(this.npcs.map((n) => n.id));
     seedInitialRelationships(this.npcs, this.relationships, this.rng);
+    initializeVillageRoles(this.npcs);
+    updateSocialStanding(this.npcs, this.relationships, null);
 
     this.eventLog = new EventLog();
     this.eventLog.push(this.tick, '新しい村ができた。10人の暮らしが始まる。', [], true);
@@ -79,6 +93,17 @@ export class World {
   private interactionDeps(): InteractionDeps {
     return {
       ...this.behaviorContext(),
+      pushEvent: (text, npcIds, major) => this.eventLog.push(this.tick, text, npcIds, major),
+      findNpc: (id) => this.npcById.get(id),
+    };
+  }
+
+  private incidentContext(): IncidentContext {
+    return {
+      npcs: this.npcs,
+      relationships: this.relationships,
+      rng: this.rng,
+      tick: this.tick,
       pushEvent: (text, npcIds, major) => this.eventLog.push(this.tick, text, npcIds, major),
       findNpc: (id) => this.npcById.get(id),
     };
@@ -125,6 +150,7 @@ export class World {
   }
 
   private processPeriodicChecks(minutesDelta: number): void {
+    this.processIncidentChecks();
     this.hourAccumulator += minutesDelta;
     if (this.hourAccumulator >= 60) {
       this.hourAccumulator -= 60;
@@ -148,6 +174,38 @@ export class World {
       this.relationships.decayJealousy(
         this.npcs.map((n) => n.id),
         CONFIG.romance.jealousyDecayPerDay,
+      );
+      updateSocialStanding(this.npcs, this.relationships, this.activeIncident);
+    }
+  }
+
+  private processIncidentChecks(): void {
+    if (!this.activeIncident && this.tick >= this.nextIncidentTick) {
+      this.activeIncident = createVillageIncident(this.incidentContext(), this.incidentSequence++);
+      this.incidentHistory.push(this.activeIncident);
+      this.lastTestimonyShareTick = this.tick;
+      updateSocialStanding(this.npcs, this.relationships, this.activeIncident);
+      return;
+    }
+    const incident = this.activeIncident;
+    if (!incident || incident.phase === 'resolved') return;
+
+    if (
+      incident.phase === 'investigation' &&
+      this.tick - this.lastTestimonyShareTick >= CONFIG.incident.testimonyShareIntervalMinutes
+    ) {
+      shareNextTestimony(incident, this.incidentContext());
+      this.lastTestimonyShareTick = this.tick;
+      updateSocialStanding(this.npcs, this.relationships, incident);
+    }
+
+    if (incident.phase === 'investigation' && this.tick >= incident.meetingTick) {
+      holdVillageMeeting(incident, this.incidentContext());
+      updateSocialStanding(this.npcs, this.relationships, incident);
+      this.activeIncident = null;
+      this.nextIncidentTick = this.tick + this.rng.range(
+        CONFIG.incident.intervalDaysMin * 24 * 60,
+        CONFIG.incident.intervalDaysMax * 24 * 60,
       );
     }
   }

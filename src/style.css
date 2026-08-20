@@ -296,7 +296,7 @@ button:active {
 
 /* ---- Overlays (map / debug) ---- */
 .hidden { display: none !important; }
-#map-overlay, #debug-overlay {
+#map-overlay, #debug-overlay, #village-overlay, #chronicle-overlay {
   position: absolute;
   inset: 0;
   background: rgba(10, 12, 20, 0.72);
@@ -304,6 +304,145 @@ button:active {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.story-overlay {
+  width: min(92vw, 760px);
+  background: linear-gradient(145deg, #191923, #24202a);
+}
+.story-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 8px 18px;
+  color: #eee;
+}
+.story-content h3 {
+  margin: 14px 0 8px;
+  color: #ffe099;
+  font-size: 15px;
+}
+.story-content h4 {
+  margin: 12px 0 5px;
+  color: #d8d2c4;
+}
+.incident-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 224, 153, 0.2);
+  border-radius: 12px;
+  padding: 14px;
+}
+.incident-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #ffd166;
+  font-size: 17px;
+  font-weight: 700;
+}
+.incident-heading .phase {
+  flex-shrink: 0;
+  background: #8f3d4b;
+  color: #fff;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+}
+.story-meta {
+  color: #aaa3b2;
+  font-size: 11px;
+}
+.incident-card li {
+  margin-bottom: 5px;
+  line-height: 1.5;
+}
+.truth {
+  display: inline-block;
+  margin-left: 5px;
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.truth.fact { background: #2a9d8f; }
+.truth.mistake { background: #b28b32; }
+.truth.lie { background: #b54a5a; }
+.vote-list {
+  columns: 2;
+}
+.outcome {
+  margin-top: 12px;
+  border-left: 4px solid #ffd166;
+  background: rgba(255, 209, 102, 0.12);
+  padding: 10px;
+  font-weight: 700;
+}
+.status-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.status-table th, .status-table td {
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  padding: 7px 9px;
+  text-align: left;
+}
+.status-table th { color: #bbb3c2; }
+.empty-story {
+  padding: 30px;
+  text-align: center;
+  color: #aaa3b2;
+}
+.secret-card {
+  background: #30273a;
+  border: 1px dashed #8a6ba0;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.secret-card span { color: #9e8dad; }
+
+#chronicle-content {
+  position: relative;
+  padding-left: 34px;
+}
+.chronicle-line {
+  position: absolute;
+  top: 18px;
+  bottom: 25px;
+  left: 19px;
+  width: 2px;
+  background: linear-gradient(#ffd166, rgba(255, 209, 102, 0.1));
+}
+.chronicle-entry {
+  position: relative;
+  margin: 12px 0 18px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.055);
+  border-radius: 10px;
+}
+.chronicle-dot {
+  position: absolute;
+  left: -29px;
+  top: 11px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffd166;
+  color: #33270a;
+  font-size: 10px;
+  font-weight: 700;
+}
+.chronicle-entry time {
+  color: #c4a95f;
+  font-size: 11px;
+}
+.chronicle-entry p {
+  margin: 4px 0 0;
+  line-height: 1.55;
 }
 .overlay-inner {
   position: relative;

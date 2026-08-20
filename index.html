@@ -25,6 +25,8 @@
         </div>
         <div id="top-actions">
           <button id="btn-map">関係マップ</button>
+          <button id="btn-village">村の状況</button>
+          <button id="btn-chronicle">年代記</button>
           <button id="btn-debug">デバッグ</button>
           <button id="btn-restart">新しい村を作る</button>
         </div>
@@ -53,6 +55,22 @@
           <button id="debug-close" class="overlay-close">×</button>
           <div class="panel-title">デバッグモード</div>
           <div id="debug-content"></div>
+        </div>
+      </div>
+
+      <div id="village-overlay" class="hidden">
+        <div class="overlay-inner story-overlay">
+          <button id="village-close" class="overlay-close">×</button>
+          <div class="panel-title">村の状況</div>
+          <div id="village-content" class="story-content"></div>
+        </div>
+      </div>
+
+      <div id="chronicle-overlay" class="hidden">
+        <div class="overlay-inner story-overlay">
+          <button id="chronicle-close" class="overlay-close">×</button>
+          <div class="panel-title">10人村の年代記</div>
+          <div id="chronicle-content" class="story-content"></div>
         </div>
       </div>
 
