@@ -24,6 +24,14 @@ const NEED_LABELS: Record<string, string> = {
   social: '社交欲求',
 };
 
+const ROLE_LABELS = {
+  mayor: '🏛️ 村長',
+  popular: '⭐ 人気者',
+  trusted: '🤝 信頼されている',
+  outcast: '🌑 孤立気味',
+  suspect: '🔍 容疑者',
+} as const;
+
 function colorHex(n: number): string {
   return '#' + n.toString(16).padStart(6, '0');
 }
@@ -90,6 +98,11 @@ export class NpcPanelUI {
     const disliked = relEntries.slice(-1)[0];
 
     const romanceLabel = this.romanceLabel(npc);
+    const roleLabels = npc.socialStatus.roles.map((role) => ROLE_LABELS[role]).join('　') || '特になし';
+    const testimony = this.world.activeIncident?.testimonies.find((item) => item.witnessId === npc.id);
+    const privateKnowledge = testimony
+      ? `<div class="secret-card"><strong>秘密の目撃情報</strong><br>${escapeHtml(testimony.text)}${testimony.shared ? '<br><span>この証言は村に公開済み</span>' : '<br><span>まだ誰にも話していない</span>'}</div>`
+      : '<div class="memory-item">事件について特別な情報は持っていない</div>';
 
     const relRows = relEntries
       .map(({ id, edge, other }) => {
@@ -124,6 +137,12 @@ export class NpcPanelUI {
       </div>
       <div class="mood-line">気分: ${moodLabel}${romanceLabel ? ' ／ ' + romanceLabel : ''}</div>
       <div class="mood-line">好きな相手: ${liked ? liked.other!.name : 'なし'} ／ 苦手な相手: ${disliked && disliked.edge.affection < 0 ? disliked.other!.name : 'なし'}</div>
+
+      <div class="section-title">村での立場</div>
+      <div class="mood-line">${roleLabels}</div>
+      <div class="mood-line">評判: ${Math.round(npc.socialStatus.reputation)}</div>
+
+      ${this.world.activeIncident ? `<div class="section-title">事件について知っていること</div>${privateKnowledge}` : ''}
 
       <div class="section-title">性格</div>
       ${traitRows}

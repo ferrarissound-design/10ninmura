@@ -11,6 +11,8 @@ import { TimeUI } from './ui/timeUI';
 import { RelationshipMapUI } from './ui/mapUI';
 import { DebugUI } from './ui/debugUI';
 import { OverheadUI } from './ui/overheadUI';
+import { VillageUI } from './ui/villageUI';
+import { ChronicleUI } from './ui/chronicleUI';
 
 const canvas = document.getElementById('scene-canvas') as HTMLCanvasElement;
 
@@ -27,6 +29,8 @@ const timeUI = new TimeUI(world);
 const mapUI = new RelationshipMapUI(world);
 const debugUI = new DebugUI(world);
 const overheadUI = new OverheadUI();
+const villageUI = new VillageUI(world);
+const chronicleUI = new ChronicleUI(world.eventLog);
 
 initEventLogUI(world.eventLog);
 overheadUI.sync(npcMeshes);
@@ -103,6 +107,8 @@ document.getElementById('btn-restart')!.addEventListener('click', () => {
   timeUI.setWorld(world);
   mapUI.setWorld(world);
   debugUI.setWorld(world);
+  villageUI.setWorld(world);
+  chronicleUI.setEventLog(world.eventLog);
   initEventLogUI(world.eventLog);
 });
 
@@ -127,6 +133,8 @@ function animate(): void {
     timeUI.refreshClock();
     npcPanel.refresh();
     debugUI.refresh();
+    villageUI.refresh();
+    chronicleUI.refresh();
   }
 
   sceneManager.render();

@@ -8,6 +8,7 @@ import type {
   NpcId,
   PersonalityTraits,
   RomanceState,
+  SocialStatus,
 } from '../types';
 import { pickName } from './names';
 
@@ -88,6 +89,7 @@ export class Npc {
 
   memory: MemoryEntry[] = [];
   romance: RomanceState = { stage: 'none', targetId: null, since: 0, exIds: [] };
+  socialStatus: SocialStatus = { reputation: 0, roles: [] };
 
   lastInteractionTick: Map<NpcId, number> = new Map();
 
@@ -153,6 +155,13 @@ function moodDeltaForMemory(type: MemoryEntry['type']): number {
       return -3;
     case 'heard_gossip_about':
       return -0.5;
+    case 'defended_by':
+      return 2;
+    case 'witnessed_incident':
+    case 'accused_by':
+    case 'voted_against':
+    case 'wrongly_accused':
+      return -2.5;
     default:
       return 0;
   }
