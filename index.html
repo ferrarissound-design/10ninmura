@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>10人村：放置したら人間関係が崩壊した</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="scene-canvas"></canvas>
+
+      <div id="top-bar">
+        <div id="title">10人村<span class="subtitle">放置したら人間関係が崩壊した</span></div>
+        <div id="clock"><span id="clock-time">06:00</span> <span id="clock-day">1日目</span></div>
+        <div id="time-controls">
+          <button data-speed="0" class="speed-btn">⏸</button>
+          <button data-speed="1" class="speed-btn active">×1</button>
+          <button data-speed="2" class="speed-btn">×2</button>
+          <button data-speed="5" class="speed-btn">×5</button>
+          <button data-speed="10" class="speed-btn">×10</button>
+        </div>
+        <div id="top-actions">
+          <button id="btn-map">関係マップ</button>
+          <button id="btn-debug">デバッグ</button>
+          <button id="btn-restart">新しい村を作る</button>
+        </div>
+      </div>
+
+      <div id="event-log-panel">
+        <div class="panel-title">村の出来事ログ</div>
+        <div id="event-log"></div>
+      </div>
+
+      <div id="npc-panel" class="hidden">
+        <button id="npc-panel-close">×</button>
+        <div id="npc-panel-content"></div>
+      </div>
+
+      <div id="map-overlay" class="hidden">
+        <div class="overlay-inner">
+          <button id="map-close" class="overlay-close">×</button>
+          <div class="panel-title">人間関係マップ</div>
+          <canvas id="map-canvas"></canvas>
+        </div>
+      </div>
+
+      <div id="debug-overlay" class="hidden">
+        <div class="overlay-inner">
+          <button id="debug-close" class="overlay-close">×</button>
+          <div class="panel-title">デバッグモード</div>
+          <div id="debug-content"></div>
+        </div>
+      </div>
+
+      <div id="tooltip-layer"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
