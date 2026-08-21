@@ -78,6 +78,8 @@ export class Npc {
   facing: number = 0;
 
   activity: ActivityKind = 'idle';
+  activityStarted = false;
+  activityDurationMinutes = 0;
   dwellUntilTick: number = 0;
   activityTargetNpcId: NpcId | null = null;
 
@@ -85,9 +87,11 @@ export class Npc {
   pausedActivity: ActivityKind | null = null;
   pausedDestination: { x: number; z: number } | null = null;
   pausedDestinationPoiId: string | null = null;
-  pausedDwellUntilTick: number = 0;
+  pausedActivityStarted = false;
+  pausedDwellRemainingMinutes = 0;
 
   memory: MemoryEntry[] = [];
+  memorySequence = 0;
   romance: RomanceState = { stage: 'none', targetId: null, since: 0, exIds: [] };
   socialStatus: SocialStatus = { reputation: 0, roles: [] };
 

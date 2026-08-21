@@ -74,6 +74,7 @@ export interface MemoryEntry {
   isMajor: boolean;
   text: string; // 日本語の短い説明
   fromRumor?: boolean;
+  rumor?: RumorContent;
 }
 
 export type RomanceStage = 'none' | 'crush' | 'dating' | 'heartbroken';
@@ -101,19 +102,10 @@ export type InteractionKind =
 export interface RumorContent {
   id: string;
   subjectId: NpcId;
-  aboutId: NpcId; // 噂の対象(subjectの相手)
-  kind:
-    | 'bad_mouthed'
-    | 'started_dating'
-    | 'fought'
-    | 'confessed'
-    | 'broke_up'
-    | 'argued'
-    | 'gift_given'
-    | 'complimented';
-  tick: number;
-  distorted: boolean;
-  intensity: number; // 0-100 噂の強さ(誇張されると増える)
+  sourceType: MemoryType; // 噂の元になった出来事。再伝播しても失わない。
+  originTick: number;
+  distorted: boolean; // どこかの伝播で歪んだか
+  intensity: number; // 現在の噂の強さ。伝聞のたびに減衰する。
   hops: number; // 何人を経由したか
 }
 
@@ -144,6 +136,7 @@ export interface VillageVote {
   voterId: NpcId;
   suspectId: NpcId;
   confidence: number;
+  reason: string;
 }
 
 export interface VillageIncident {

@@ -61,8 +61,6 @@ export const CONFIG = {
       joke: 6,
       gift: 16,
       confess_success_affection: 20,
-      badmouth_speaker_target: -6, // 悪口対象への話者自身の好感度変化
-      badmouth_listener_target: -5, // 聞いた側の対象への好感度変化(噂経由と同じ式を使う)
       argue: -14,
       fight: -26,
       apologize_recover: 12,
@@ -91,6 +89,10 @@ export const CONFIG = {
 
   romance: {
     crushThreshold: 55, // affection+相性がこれを超えると恋愛感情が芽生え始める
+    crushKeepThreshold: 38, // これを下回る状態が続くと片思いが冷めていく
+    crushGrowthPerHour: 4,
+    crushDecayPerHour: 6,
+    crushAbandonRomance: 12,
     confessReadiness: 62, // 恋愛感情がこれを超えると告白を検討する
     confessBaseChance: 0.012, // 条件を満たした状態で1回の交流機会に告白する基礎確率
     breakupGrudgeThreshold: 40,

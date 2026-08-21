@@ -38,7 +38,7 @@ export class ChronicleUI {
 
   refresh(): void {
     if (!this.visible) return;
-    const entries = this.eventLog.entries.filter((entry) => entry.major);
+    const entries = this.eventLog.majorEntries;
     this.content.innerHTML = entries.length
       ? `<div class="chronicle-line"></div>${entries
           .map((entry, index) => `<article class="chronicle-entry">

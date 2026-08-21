@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import type { Npc } from '../npc/Npc';
 import { chooseNextActivity, type BehaviorContext } from './behavior';
-import { recoverEat, recoverSleep } from './needs';
+import { recoverEat, recoverFunPlaza, recoverFunWalk, recoverSleep } from './needs';
 
 function clamp(v: number): number {
   return Math.max(0, Math.min(100, v));
@@ -13,8 +13,7 @@ function applyDwellEffects(npc: Npc, minutesDelta: number): void {
       recoverSleep(npc, minutesDelta);
       break;
     case 'at_plaza':
-      npc.needs.fun = clamp(npc.needs.fun - (2.2 / 30) * minutesDelta);
-      npc.needs.loneliness = clamp(npc.needs.loneliness - (3 / 30) * minutesDelta);
+      recoverFunPlaza(npc, minutesDelta);
       break;
     case 'sitting':
       npc.needs.fatigue = clamp(npc.needs.fatigue - (5 / 30) * minutesDelta);
@@ -33,7 +32,8 @@ export function updateMovement(npc: Npc, ctx: BehaviorContext, simDeltaSeconds: 
       npc.activity = npc.pausedActivity ?? 'idle';
       npc.destination = npc.pausedDestination;
       npc.destinationPoiId = npc.pausedDestinationPoiId;
-      npc.dwellUntilTick = npc.pausedDwellUntilTick;
+      npc.activityStarted = npc.pausedActivityStarted;
+      npc.dwellUntilTick = npc.activityStarted ? ctx.tick + npc.pausedDwellRemainingMinutes : 0;
       npc.pausedActivity = null;
       npc.pausedDestination = null;
     } else {
@@ -41,11 +41,20 @@ export function updateMovement(npc: Npc, ctx: BehaviorContext, simDeltaSeconds: 
     }
   }
 
+  if (npc.activity === 'visiting' && !npc.activityStarted && npc.activityTargetNpcId && npc.destination) {
+    const target = ctx.npcs.find((other) => other.id === npc.activityTargetNpcId);
+    if (target) {
+      npc.destination.x = target.position.x;
+      npc.destination.z = target.position.z;
+    }
+  }
+
   if (npc.destination) {
     const dx = npc.destination.x - npc.position.x;
     const dz = npc.destination.z - npc.position.z;
     const dist = Math.hypot(dx, dz);
-    if (dist > CONFIG.movement.arriveDistance) {
+    const arriveDistance = npc.activity === 'visiting' ? CONFIG.interaction.radius * 0.6 : CONFIG.movement.arriveDistance;
+    if (dist > arriveDistance) {
       const step = CONFIG.movement.speed * simDeltaSeconds;
       const t = Math.min(1, step / Math.max(dist, 0.0001));
       npc.position.x += dx * t;
@@ -53,12 +62,18 @@ export function updateMovement(npc: Npc, ctx: BehaviorContext, simDeltaSeconds: 
       if (dx !== 0 || dz !== 0) npc.facing = Math.atan2(dx, dz);
       return;
     }
-    npc.position.x = npc.destination.x;
-    npc.position.z = npc.destination.z;
+    if (npc.activity !== 'visiting') {
+      npc.position.x = npc.destination.x;
+      npc.position.z = npc.destination.z;
+    }
     npc.destination = null;
     if (npc.activity === 'eating') recoverEat(npc);
+    if (npc.activity === 'strolling') recoverFunWalk(npc);
+    npc.activityStarted = true;
+    npc.dwellUntilTick = ctx.tick + npc.activityDurationMinutes;
   }
 
+  if (!npc.activityStarted) return;
   applyDwellEffects(npc, minutesDelta);
 
   if (ctx.tick >= npc.dwellUntilTick) {

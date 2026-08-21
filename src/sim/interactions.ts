@@ -3,7 +3,7 @@ import { addMemory } from './memory';
 import type { Npc } from '../npc/Npc';
 import { recoverSocial } from './needs';
 import type { BehaviorContext } from './behavior';
-import type { InteractionKind, MemoryEntry, MemoryType, NpcId } from '../types';
+import type { InteractionKind, MemoryEntry, MemoryType, NpcId, RumorContent } from '../types';
 
 export interface InteractionDeps extends BehaviorContext {
   pushEvent: (text: string, npcIds: NpcId[], major?: boolean) => void;
@@ -26,7 +26,8 @@ function pause(npc: Npc, ctx: InteractionDeps, durationMinutes: number): void {
   npc.pausedActivity = npc.activity;
   npc.pausedDestination = npc.destination;
   npc.pausedDestinationPoiId = npc.destinationPoiId;
-  npc.pausedDwellUntilTick = npc.dwellUntilTick;
+  npc.pausedActivityStarted = npc.activityStarted;
+  npc.pausedDwellRemainingMinutes = npc.activityStarted ? Math.max(0, npc.dwellUntilTick - ctx.tick) : 0;
   npc.activity = 'interacting';
   npc.destination = null;
   npc.interactionEndTick = ctx.tick + durationMinutes;
@@ -240,11 +241,11 @@ function tryGossip(speaker: Npc, listener: Npc, ctx: InteractionDeps): boolean {
   const subject = ctx.findNpc(chosen.aboutId);
   if (!subject) return false;
 
-  let type = chosen.type;
-  let intensity = chosen.weight;
-  let distorted = false;
+  let type = chosen.rumor?.sourceType ?? chosen.type;
+  let intensity = chosen.rumor?.intensity ?? chosen.weight;
+  let distortedThisHop = false;
   if (ctx.rng.bool(CONFIG.rumor.distortionChance)) {
-    distorted = true;
+    distortedThisHop = true;
     intensity = Math.min(100, intensity * CONFIG.rumor.exaggerationFactor);
     const escalated = ESCALATION_MAP[type];
     if (escalated && ctx.rng.bool(0.5)) type = escalated;
@@ -252,7 +253,6 @@ function tryGossip(speaker: Npc, listener: Npc, ctx: InteractionDeps): boolean {
 
   const sentiment = eventSentiment(type);
   const negative = sentiment < 0;
-  const kind: InteractionKind = negative ? 'badmouth' : 'gossip';
 
   const listenerHeardWeight = Math.max(
     CONFIG.rumor.maxHopWeightFloor * 10,
@@ -263,7 +263,18 @@ function tryGossip(speaker: Npc, listener: Npc, ctx: InteractionDeps): boolean {
   const text = negative
     ? `${subject.name}が${verb}らしいよ…`
     : `聞いた？${subject.name}が${verb}んだって`;
-  say(speaker, distorted ? text + '(という噂)' : text, ctx, chosen.isMajor);
+  const distorted = (chosen.rumor?.distorted ?? false) || distortedThisHop;
+  say(speaker, distortedThisHop ? text + '(という噂)' : text, ctx, chosen.isMajor);
+
+  const rumor: RumorContent = {
+    id: chosen.rumor?.id ?? `rumor_${chosen.id}`,
+    subjectId: subject.id,
+    sourceType: type,
+    originTick: chosen.rumor?.originTick ?? chosen.tick,
+    distorted,
+    intensity: listenerHeardWeight,
+    hops: (chosen.rumor?.hops ?? 0) + 1,
+  };
 
   addMemory(
     listener,
@@ -274,9 +285,13 @@ function tryGossip(speaker: Npc, listener: Npc, ctx: InteractionDeps): boolean {
     `${speaker.name}から${subject.name}の噂を聞いた`,
     speaker.id,
     true,
+    rumor,
   );
 
-  const affectionDelta = sentiment * 6 * (intensity / 100) * CONFIG.rumor.hearImpressionScale;
+  const rumorDelta = negative
+    ? CONFIG.relationship.deltas.rumor_negative
+    : CONFIG.relationship.deltas.rumor_positive;
+  const affectionDelta = rumorDelta * Math.max(0.25, Math.abs(sentiment)) * (intensity / 100) * CONFIG.rumor.hearImpressionScale;
   ctx.relationships.adjustAffection(listener.id, subject.id, affectionDelta);
   if (negative) ctx.relationships.adjustGrudge(listener.id, subject.id, Math.abs(affectionDelta) * 0.5);
 
@@ -398,7 +413,7 @@ function checkJealousWitnesses(actor: Npc, target: Npc, ctx: InteractionDeps): v
 
 export function tryInteraction(a: Npc, b: Npc, ctx: InteractionDeps): boolean {
   if (a.activity === 'interacting' || b.activity === 'interacting') return false;
-  if (a.activity === 'sleeping' || b.activity === 'sleeping') return false;
+  if ((a.activity === 'sleeping' && a.activityStarted) || (b.activity === 'sleeping' && b.activityStarted)) return false;
 
   const lastA = a.lastInteractionTick.get(b.id) ?? -Infinity;
   if (ctx.tick - lastA < CONFIG.interaction.cooldownMinutes) return false;
