@@ -13,6 +13,7 @@ import { DebugUI } from './ui/debugUI';
 import { OverheadUI } from './ui/overheadUI';
 import { VillageUI } from './ui/villageUI';
 import { ChronicleUI } from './ui/chronicleUI';
+import { VillageDataUI } from './ui/dataUI';
 
 const canvas = document.getElementById('scene-canvas') as HTMLCanvasElement;
 
@@ -31,6 +32,7 @@ const debugUI = new DebugUI(world);
 const overheadUI = new OverheadUI();
 const villageUI = new VillageUI(world);
 const chronicleUI = new ChronicleUI(world.eventLog);
+const dataUI = new VillageDataUI(world, replaceWorld);
 
 initEventLogUI(world.eventLog);
 overheadUI.sync(npcMeshes);
@@ -91,25 +93,38 @@ canvas.addEventListener('click', (ev) => {
 });
 
 // ---- 新しい村を作る ----
-document.getElementById('btn-restart')!.addEventListener('click', () => {
+function replaceWorld(nextWorld: World, preserveSpeed = true): void {
   npcPanel.hide();
   sceneManager.scene.remove(villageGroup);
   disposeObject3D(villageGroup);
   clearNpcMeshes();
 
-  world = new World();
+  world = nextWorld;
   villageGroup = buildVillage(world.layout);
   sceneManager.scene.add(villageGroup);
   npcMeshes = createNpcMeshes(world);
   overheadUI.sync(npcMeshes);
 
   npcPanel.setWorld(world);
-  timeUI.setWorld(world);
+  timeUI.setWorld(world, preserveSpeed);
   mapUI.setWorld(world);
   debugUI.setWorld(world);
   villageUI.setWorld(world);
   chronicleUI.setEventLog(world.eventLog);
+  dataUI.setWorld(world);
   initEventLogUI(world.eventLog);
+}
+
+document.getElementById('btn-restart')!.addEventListener('click', () => {
+  replaceWorld(new World());
+});
+
+window.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  const closeButton = document.querySelector<HTMLElement>(
+    '#map-overlay:not(.hidden) .overlay-close, #debug-overlay:not(.hidden) .overlay-close, #village-overlay:not(.hidden) .overlay-close, #chronicle-overlay:not(.hidden) .overlay-close, #data-overlay:not(.hidden) .overlay-close',
+  );
+  closeButton?.click();
 });
 
 // ---- メインループ ----

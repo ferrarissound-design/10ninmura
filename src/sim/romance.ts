@@ -17,6 +17,9 @@ export interface RomanceContext {
 export function updateCrushFormation(npc: Npc, ctx: RomanceContext): void {
   if (npc.romance.stage === 'dating') return;
   if (npc.romance.stage === 'heartbroken' && ctx.tick - npc.romance.since < 24 * 60) return;
+  if (npc.romance.stage === 'heartbroken') {
+    npc.romance = { stage: 'none', targetId: null, since: ctx.tick, exIds: npc.romance.exIds };
+  }
 
   const row = ctx.relationships.rowFor(npc.id);
   let bestId: string | null = null;
@@ -42,7 +45,21 @@ export function updateCrushFormation(npc: Npc, ctx: RomanceContext): void {
     ctx.relationships.adjustRomance(npc.id, bestId, 18);
     addMemory(npc, ctx.tick, 'cheerful_chat_with', bestId, 15, `${target.name}のことが気になり始めた`);
   } else if (npc.romance.stage === 'crush' && npc.romance.targetId) {
-    ctx.relationships.adjustRomance(npc.id, npc.romance.targetId, 4);
+    const targetId = npc.romance.targetId;
+    const target = ctx.npcs.find((candidate) => candidate.id === targetId);
+    const edge = ctx.relationships.get(npc.id, targetId);
+    const interestScore = edge.affection * 0.55 + edge.trust * 0.25 + npc.personality.romanceDrive * 0.25;
+    const targetUnavailable = !target || (target.romance.stage === 'dating' && target.romance.targetId !== npc.id);
+
+    if (!targetUnavailable && interestScore >= CONFIG.romance.crushKeepThreshold) {
+      ctx.relationships.adjustRomance(npc.id, targetId, CONFIG.romance.crushGrowthPerHour);
+    } else {
+      ctx.relationships.adjustRomance(npc.id, targetId, -CONFIG.romance.crushDecayPerHour);
+      const cooledEdge = ctx.relationships.get(npc.id, targetId);
+      if (cooledEdge.romance <= CONFIG.romance.crushAbandonRomance || cooledEdge.affection < -35) {
+        npc.romance = { stage: 'none', targetId: null, since: ctx.tick, exIds: npc.romance.exIds };
+      }
+    }
   }
 }
 

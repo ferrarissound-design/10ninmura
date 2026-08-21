@@ -19,9 +19,11 @@ export class TimeUI {
     this.updateActive();
   }
 
-  setWorld(world: World): void {
+  setWorld(world: World, preserveCurrentSpeed = true): void {
+    const speed = preserveCurrentSpeed ? this.currentSpeed() : world.speedMultiplier;
     this.world = world;
-    this.world.speedMultiplier = this.currentSpeed();
+    this.world.speedMultiplier = speed;
+    this.updateActive();
   }
 
   private currentSpeed(): number {

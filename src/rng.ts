@@ -6,6 +6,14 @@ export class Rng {
     this.state = seed >>> 0;
   }
 
+  getState(): number {
+    return this.state >>> 0;
+  }
+
+  setState(state: number): void {
+    this.state = state >>> 0;
+  }
+
   next(): number {
     this.state |= 0;
     this.state = (this.state + 0x6d2b79f5) | 0;

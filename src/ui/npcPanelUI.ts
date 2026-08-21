@@ -1,6 +1,6 @@
 import type { World } from '../sim/World';
 import type { Npc } from '../npc/Npc';
-import type { NpcId, PersonalityTraits } from '../types';
+import type { ActivityKind, NpcId, PersonalityTraits } from '../types';
 import { formatTime } from '../sim/eventLog';
 
 const TRAIT_LABELS: Record<keyof PersonalityTraits, string> = {
@@ -31,6 +31,29 @@ const ROLE_LABELS = {
   outcast: '🌑 孤立気味',
   suspect: '🔍 容疑者',
 } as const;
+
+const ACTIVITY_LABELS: Record<ActivityKind, string> = {
+  idle: '家で休憩',
+  sleeping: '睡眠中',
+  eating: '食事中',
+  strolling: '散歩中',
+  visiting: '友人を訪問中',
+  at_plaza: '広場で過ごしている',
+  farming: '農作業中',
+  sitting: 'ベンチで休憩',
+  interacting: '交流中',
+};
+
+const TRAVEL_LABELS: Partial<Record<ActivityKind, string>> = {
+  idle: '帰宅中',
+  sleeping: '睡眠のため帰宅中',
+  eating: '食事のため帰宅中',
+  strolling: '散歩中',
+  visiting: '友人のところへ移動中',
+  at_plaza: '広場へ移動中',
+  farming: '畑へ移動中',
+  sitting: 'ベンチへ移動中',
+};
 
 function colorHex(n: number): string {
   return '#' + n.toString(16).padStart(6, '0');
@@ -94,7 +117,8 @@ export class NpcPanelUI {
       .filter((e) => e.other)
       .sort((a, b) => b.edge.affection - a.edge.affection);
 
-    const liked = relEntries.slice(0, 1)[0];
+    const likedCandidate = relEntries.slice(0, 1)[0];
+    const liked = likedCandidate && likedCandidate.edge.affection >= 10 ? likedCandidate : undefined;
     const disliked = relEntries.slice(-1)[0];
 
     const romanceLabel = this.romanceLabel(npc);
@@ -132,10 +156,11 @@ export class NpcPanelUI {
         <span class="npc-color-dot" style="background:${colorHex(npc.appearance.bodyColor)}"></span>
         <div>
           <div class="npc-name">${npc.name}</div>
-          <div class="npc-sub">${genderLabel}・${npc.activity}</div>
+          <div class="npc-sub">${genderLabel}・${this.activityLabel(npc)}</div>
         </div>
       </div>
       <div class="mood-line">気分: ${moodLabel}${romanceLabel ? ' ／ ' + romanceLabel : ''}</div>
+      <div class="mood-line">行動の主なきっかけ: ${this.activityReason(npc)}</div>
       <div class="mood-line">好きな相手: ${liked ? liked.other!.name : 'なし'} ／ 苦手な相手: ${disliked && disliked.edge.affection < 0 ? disliked.other!.name : 'なし'}</div>
 
       <div class="section-title">村での立場</div>
@@ -171,6 +196,27 @@ export class NpcPanelUI {
       return '💔 失恋中';
     }
     return '';
+  }
+
+  private activityLabel(npc: Npc): string {
+    if (npc.activity === 'interacting' || npc.activityStarted) return ACTIVITY_LABELS[npc.activity];
+    return TRAVEL_LABELS[npc.activity] ?? ACTIVITY_LABELS[npc.activity];
+  }
+
+  private activityReason(npc: Npc): string {
+    if (npc.activity === 'interacting') return '近くにいた村人との交流が始まった';
+    const needReasons: Partial<Record<ActivityKind, keyof Npc['needs']>> = {
+      sleeping: 'fatigue',
+      eating: 'hunger',
+      visiting: 'loneliness',
+      at_plaza: 'social',
+      strolling: 'fun',
+      sitting: 'fatigue',
+    };
+    const need = needReasons[npc.activity];
+    if (need) return `${NEED_LABELS[need]}への対応（現在 ${Math.round(npc.needs[need])}）`;
+    if (npc.activity === 'farming') return '金銭欲と日中の生活リズムが影響した';
+    return '家で落ち着いて過ごすことを選んだ';
   }
 
   private traitRow(label: string, value: number, tone: 'default' | 'warm' = 'default'): string {

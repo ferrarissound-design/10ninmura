@@ -66,7 +66,8 @@ export class VillageUI {
         .map((vote) => {
           const voter = this.world.getNpc(vote.voterId)?.name ?? '?';
           const suspect = this.world.getNpc(vote.suspectId)?.name ?? '?';
-          return `<li>${escapeHtml(voter)} → ${escapeHtml(suspect)}</li>`;
+          const mayorMark = this.world.getNpc(vote.voterId)?.socialStatus.roles.includes('mayor') ? '（村長票×1.5）' : '';
+          return `<li>${escapeHtml(voter)} → ${escapeHtml(suspect)}${mayorMark}<span class="vote-reason">${escapeHtml(vote.reason)}</span></li>`;
         })
         .join('');
       incidentHtml = `

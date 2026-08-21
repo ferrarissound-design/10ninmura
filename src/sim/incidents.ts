@@ -142,10 +142,25 @@ function chooseVote(voter: Npc, incident: VillageIncident, ctx: IncidentContext)
       incident.testimonies.some((item) => item.witnessId === voter.id && item.suspectId === candidate.id && item.truth === 'lie')
         ? ctx.rng.range(45, 75)
         : 0;
-    return { candidate, score: evidence + bias + statusBias + culpritDeception + ctx.rng.range(0, 22) };
+    const intuition = ctx.rng.range(0, 22);
+    const reason = culpritDeception > 0
+      ? '自分への疑いをそらそうとした'
+      : evidence >= Math.max(Math.abs(bias), Math.abs(statusBias), intuition) && evidence > 8
+        ? '公開証言を重く見た'
+        : bias >= Math.max(Math.abs(statusBias), intuition) && bias > 8
+          ? '日頃の不信や恨みが影響した'
+          : statusBias > intuition && statusBias > 5
+            ? '村での悪い評判を疑った'
+            : '決め手に欠け、直感で選んだ';
+    return { candidate, score: evidence + bias + statusBias + culpritDeception + intuition, reason };
   });
   scored.sort((a, b) => b.score - a.score);
-  return { voterId: voter.id, suspectId: scored[0].candidate.id, confidence: Math.max(1, scored[0].score) };
+  return {
+    voterId: voter.id,
+    suspectId: scored[0].candidate.id,
+    confidence: Math.max(1, scored[0].score),
+    reason: scored[0].reason,
+  };
 }
 
 export function holdVillageMeeting(incident: VillageIncident, ctx: IncidentContext): void {

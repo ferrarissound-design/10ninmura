@@ -7,7 +7,6 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
     <title>10人村：放置したら人間関係が崩壊した</title>
-    <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <div id="app">
@@ -17,7 +16,7 @@
         <div id="title">10人村<span class="subtitle">放置したら人間関係が崩壊した</span></div>
         <div id="clock"><span id="clock-time">06:00</span> <span id="clock-day">1日目</span></div>
         <div id="time-controls">
-          <button data-speed="0" class="speed-btn">⏸</button>
+          <button data-speed="0" class="speed-btn" aria-label="時間を停止">⏸</button>
           <button data-speed="1" class="speed-btn active">×1</button>
           <button data-speed="2" class="speed-btn">×2</button>
           <button data-speed="5" class="speed-btn">×5</button>
@@ -28,6 +27,7 @@
           <button id="btn-village">村の状況</button>
           <button id="btn-chronicle">年代記</button>
           <button id="btn-debug">デバッグ</button>
+          <button id="btn-data">保存</button>
           <button id="btn-restart">新しい村を作る</button>
         </div>
       </div>
@@ -42,35 +42,58 @@
         <div id="npc-panel-content"></div>
       </div>
 
-      <div id="map-overlay" class="hidden">
+      <div id="map-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="map-title">
         <div class="overlay-inner">
-          <button id="map-close" class="overlay-close">×</button>
-          <div class="panel-title">人間関係マップ</div>
-          <canvas id="map-canvas"></canvas>
+          <button id="map-close" class="overlay-close" aria-label="関係マップを閉じる">×</button>
+          <div id="map-title" class="panel-title">人間関係マップ</div>
+          <div class="map-legend" aria-hidden="true">
+            <span class="positive">━ 仲良し</span><span class="romance">━ 恋愛</span><span class="hostile">┄ 対立</span>
+          </div>
+          <canvas id="map-canvas" role="img" aria-label="村人同士の好感、恋愛、対立を表す関係図"></canvas>
         </div>
       </div>
 
-      <div id="debug-overlay" class="hidden">
+      <div id="debug-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="debug-title">
         <div class="overlay-inner">
-          <button id="debug-close" class="overlay-close">×</button>
-          <div class="panel-title">デバッグモード</div>
+          <button id="debug-close" class="overlay-close" aria-label="デバッグ画面を閉じる">×</button>
+          <div id="debug-title" class="panel-title">デバッグモード</div>
           <div id="debug-content"></div>
         </div>
       </div>
 
-      <div id="village-overlay" class="hidden">
+      <div id="village-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="village-title">
         <div class="overlay-inner story-overlay">
-          <button id="village-close" class="overlay-close">×</button>
-          <div class="panel-title">村の状況</div>
+          <button id="village-close" class="overlay-close" aria-label="村の状況を閉じる">×</button>
+          <div id="village-title" class="panel-title">村の状況</div>
           <div id="village-content" class="story-content"></div>
         </div>
       </div>
 
-      <div id="chronicle-overlay" class="hidden">
+      <div id="chronicle-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="chronicle-title">
         <div class="overlay-inner story-overlay">
-          <button id="chronicle-close" class="overlay-close">×</button>
-          <div class="panel-title">10人村の年代記</div>
+          <button id="chronicle-close" class="overlay-close" aria-label="年代記を閉じる">×</button>
+          <div id="chronicle-title" class="panel-title">10人村の年代記</div>
           <div id="chronicle-content" class="story-content"></div>
+        </div>
+      </div>
+
+      <div id="data-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="data-title">
+        <div class="overlay-inner data-overlay-inner">
+          <button id="data-close" class="overlay-close" aria-label="保存画面を閉じる">×</button>
+          <div id="data-title" class="panel-title">村の保存と再現</div>
+          <div class="data-content">
+            <p>同じシードからは、同じ人物と初期関係を持つ村を作れます。</p>
+            <label class="seed-field">村のシード
+              <input id="seed-input" type="number" min="0" max="4294967295" inputmode="numeric" />
+            </label>
+            <div class="data-actions">
+              <button id="btn-seed-restart">このシードで新しい村</button>
+              <button id="btn-save-state">現在の状態を保存</button>
+              <button id="btn-load-state">保存状態を読み込む</button>
+              <button id="btn-export-chronicle">年代記を書き出す</button>
+            </div>
+            <div id="data-status" class="data-status" aria-live="polite"></div>
+          </div>
         </div>
       </div>
 

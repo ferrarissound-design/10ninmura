@@ -5,11 +5,21 @@ export type EventListener = (entry: EventLogEntry) => void;
 
 export class EventLog {
   entries: EventLogEntry[] = [];
+  majorEntries: EventLogEntry[] = [];
   private listeners: EventListener[] = [];
   private counter = 0;
 
   onEvent(listener: EventListener): void {
     this.listeners.push(listener);
+  }
+
+  restore(entries: EventLogEntry[], majorEntries: EventLogEntry[]): void {
+    this.entries = entries.map((entry) => ({ ...entry, npcIds: [...entry.npcIds] }));
+    this.majorEntries = majorEntries.map((entry) => ({ ...entry, npcIds: [...entry.npcIds] }));
+    const ids = [...this.entries, ...this.majorEntries]
+      .map((entry) => Number(entry.id.replace('evt_', '')))
+      .filter(Number.isFinite);
+    this.counter = ids.length ? Math.max(...ids) + 1 : 0;
   }
 
   push(tick: number, text: string, npcIds: NpcId[], major = false): EventLogEntry {
@@ -22,6 +32,7 @@ export class EventLog {
       npcIds,
     };
     this.entries.push(entry);
+    if (entry.major) this.majorEntries.push(entry);
     if (this.entries.length > CONFIG.debug.logHistoryLimit) {
       this.entries.shift();
     }

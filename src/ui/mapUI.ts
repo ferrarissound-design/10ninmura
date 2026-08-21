@@ -102,14 +102,19 @@ export class RelationshipMapUI {
 
   private draw(): void {
     const ctx = this.canvas.getContext('2d')!;
-    const rect = this.canvas.parentElement!.getBoundingClientRect();
-    if (this.canvas.width !== rect.width || this.canvas.height !== rect.height) {
-      this.canvas.width = rect.width;
-      this.canvas.height = rect.height;
+    const rect = this.canvas.getBoundingClientRect();
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    const pixelWidth = Math.max(1, Math.round(rect.width * pixelRatio));
+    const pixelHeight = Math.max(1, Math.round(rect.height * pixelRatio));
+    if (this.canvas.width !== pixelWidth || this.canvas.height !== pixelHeight) {
+      this.canvas.width = pixelWidth;
+      this.canvas.height = pixelHeight;
     }
-    const w = this.canvas.width;
-    const h = this.canvas.height;
-    ctx.clearRect(0, 0, w, h);
+    const w = rect.width;
+    const h = rect.height;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     ctx.save();
     ctx.translate(w / 2, h / 2);
 

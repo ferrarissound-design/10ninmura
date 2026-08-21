@@ -1,8 +1,6 @@
 import { CONFIG } from '../config';
 import type { Npc } from '../npc/Npc';
-import type { MemoryEntry, MemoryType, NpcId } from '../types';
-
-let counter = 0;
+import type { MemoryEntry, MemoryType, NpcId, RumorContent } from '../types';
 
 export function addMemory(
   npc: Npc,
@@ -13,9 +11,10 @@ export function addMemory(
   text: string,
   extraId?: NpcId,
   fromRumor?: boolean,
+  rumor?: RumorContent,
 ): void {
   const entry: MemoryEntry = {
-    id: `mem_${counter++}`,
+    id: `mem_${npc.id}_${npc.memorySequence++}`,
     tick,
     type,
     aboutId,
@@ -24,6 +23,7 @@ export function addMemory(
     isMajor: weight >= CONFIG.memory.majorWeightThreshold,
     text,
     fromRumor,
+    rumor,
   };
   npc.memory.push(entry);
   if (npc.memory.length > CONFIG.memory.maxEntries * 1.5) {

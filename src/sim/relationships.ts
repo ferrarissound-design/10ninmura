@@ -1,6 +1,8 @@
 import { CONFIG } from '../config';
 import type { NpcId, RelationshipEdge } from '../types';
 
+export type RelationshipSnapshot = [NpcId, [NpcId, RelationshipEdge][]][];
+
 function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
@@ -40,6 +42,22 @@ export class RelationshipMatrix {
 
   rowFor(from: NpcId): Map<NpcId, RelationshipEdge> {
     return this.edges.get(from) ?? new Map();
+  }
+
+  toSnapshot(): RelationshipSnapshot {
+    return [...this.edges.entries()].map(([from, row]) => [
+      from,
+      [...row.entries()].map(([to, edge]) => [to, { ...edge }]),
+    ]);
+  }
+
+  loadSnapshot(snapshot: RelationshipSnapshot): void {
+    this.edges = new Map(
+      snapshot.map(([from, row]) => [
+        from,
+        new Map(row.map(([to, edge]) => [to, { ...edge }])),
+      ]),
+    );
   }
 
   adjustAffection(from: NpcId, to: NpcId, delta: number, trustRatio = CONFIG.relationship.trustDeltaScale): void {

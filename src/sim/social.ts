@@ -30,9 +30,12 @@ export function updateSocialStanding(
   });
 
   if (!scores.length) return;
-  [...scores].sort((a, b) => b.affection - a.affection)[0].npc.socialStatus.roles.push('popular');
-  [...scores].sort((a, b) => b.trust - a.trust)[0].npc.socialStatus.roles.push('trusted');
-  [...scores].sort((a, b) => a.reputation - b.reputation)[0].npc.socialStatus.roles.push('outcast');
+  const mostPopular = [...scores].sort((a, b) => b.affection - a.affection)[0];
+  const mostTrusted = [...scores].sort((a, b) => b.trust - a.trust)[0];
+  const leastEstablished = [...scores].sort((a, b) => a.reputation - b.reputation)[0];
+  if (mostPopular.affection >= 15) mostPopular.npc.socialStatus.roles.push('popular');
+  if (mostTrusted.trust >= 15) mostTrusted.npc.socialStatus.roles.push('trusted');
+  if (leastEstablished.reputation <= -12) leastEstablished.npc.socialStatus.roles.push('outcast');
 
   if (incident && incident.phase !== 'resolved') {
     const accusationCounts = new Map<string, number>();

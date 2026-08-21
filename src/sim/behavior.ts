@@ -1,7 +1,6 @@
 import { CONFIG } from '../config';
 import type { Rng } from '../rng';
 import type { Npc } from '../npc/Npc';
-import { recoverFunWalk } from './needs';
 import type { RelationshipMatrix } from './relationships';
 import type { VillageLayout } from './villageLayout';
 import { hourOfTick, isNight } from './time';
@@ -41,6 +40,12 @@ function bestFriendId(ctx: BehaviorContext, npc: Npc): string | null {
 function setDestination(npc: Npc, x: number, z: number, poiId: string | null): void {
   npc.destination = { x, z };
   npc.destinationPoiId = poiId;
+  npc.activityStarted = false;
+  npc.dwellUntilTick = 0;
+}
+
+function setActivityDuration(npc: Npc, minutes: number): void {
+  npc.activityDurationMinutes = minutes;
 }
 
 export function chooseNextActivity(npc: Npc, ctx: BehaviorContext): void {
@@ -48,13 +53,16 @@ export function chooseNextActivity(npc: Npc, ctx: BehaviorContext): void {
   const hour = hourOfTick(ctx.tick);
   const n = npc.needs;
   const p = npc.personality;
+  const urgentNeed = npc.mostUrgentNeed();
+  const urgentBoost = n[urgentNeed] >= CONFIG.needs.urgentThreshold ? 1.8 : 1;
+  const boost = (...needs: (keyof typeof n)[]): number => needs.includes(urgentNeed) ? urgentBoost : 1;
 
-  const wSleep = (night ? 1.6 : 0.15) * (n.fatigue > 55 ? n.fatigue * 1.6 : n.fatigue * 0.4);
-  const wEat = n.hunger > 55 ? n.hunger * 1.8 : n.hunger * 0.5;
+  const wSleep = (night ? 1.6 : 0.15) * (n.fatigue > 55 ? n.fatigue * 1.6 : n.fatigue * 0.4) * boost('fatigue');
+  const wEat = (n.hunger > 55 ? n.hunger * 1.8 : n.hunger * 0.5) * boost('hunger');
   const friendId = bestFriendId(ctx, npc);
-  const wVisit = friendId && !night ? n.loneliness * (0.4 + p.sociability / 130) : 0;
-  const wPlaza = !night ? (n.social * 0.8 + n.fun * 0.3) * (0.3 + p.sociability / 120) * (1 - p.timidity / 220) : n.social * 0.1;
-  const wStroll = (n.fun * (0.4 + p.curiosity / 150)) * (night ? 0.35 : 1);
+  const wVisit = friendId && !night ? n.loneliness * (0.4 + p.sociability / 130) * boost('loneliness') : 0;
+  const wPlaza = !night ? (n.social * 0.8 + n.fun * 0.3) * (0.3 + p.sociability / 120) * (1 - p.timidity / 220) * boost('social', 'fun') : n.social * 0.1;
+  const wStroll = (n.fun * (0.4 + p.curiosity / 150)) * (night ? 0.35 : 1) * boost('fun');
   const wField = !night && hour > 7 && hour < 18 ? p.greed * 0.35 : 0;
   const wBench = !night ? n.fatigue * 0.25 : 0.05;
   const wHomeIdle = 6 + p.timidity * 0.25 + (night ? 20 : 0);
@@ -91,13 +99,13 @@ export function chooseNextActivity(npc: Npc, ctx: BehaviorContext): void {
       setDestination(npc, home.x + ctx.rng.range(-0.6, 0.6), home.z + ctx.rng.range(-0.6, 0.6), npc.homeId);
       npc.activity = 'sleeping';
       const sleepMinutes = Math.max(120, n.fatigue * 6);
-      npc.dwellUntilTick = ctx.tick + sleepMinutes;
+      setActivityDuration(npc, sleepMinutes);
       break;
     }
     case 'eat': {
       setDestination(npc, home.x + ctx.rng.range(-0.6, 0.6), home.z + ctx.rng.range(-0.6, 0.6), npc.homeId);
       npc.activity = 'eating';
-      npc.dwellUntilTick = ctx.tick + ctx.rng.range(15, 30);
+      setActivityDuration(npc, ctx.rng.range(15, 30));
       break;
     }
     case 'visit': {
@@ -106,7 +114,7 @@ export function chooseNextActivity(npc: Npc, ctx: BehaviorContext): void {
       setDestination(npc, pos.x + ctx.rng.range(-1.2, 1.2), pos.z + ctx.rng.range(-1.2, 1.2), null);
       npc.activity = 'visiting';
       npc.activityTargetNpcId = friendId;
-      npc.dwellUntilTick = ctx.tick + ctx.rng.range(CONFIG.movement.dwellMinMinutes, CONFIG.movement.dwellMaxMinutes);
+      setActivityDuration(npc, ctx.rng.range(CONFIG.movement.dwellMinMinutes, CONFIG.movement.dwellMaxMinutes));
       break;
     }
     case 'plaza': {
@@ -114,35 +122,34 @@ export function chooseNextActivity(npc: Npc, ctx: BehaviorContext): void {
       const r2 = ctx.rng.range(0.5, ctx.layout.plaza.radius - 1);
       setDestination(npc, ctx.layout.plaza.x + Math.cos(angle) * r2, ctx.layout.plaza.z + Math.sin(angle) * r2, 'plaza');
       npc.activity = 'at_plaza';
-      npc.dwellUntilTick = ctx.tick + ctx.rng.range(CONFIG.movement.dwellMinMinutes, CONFIG.movement.dwellMaxMinutes);
+      setActivityDuration(npc, ctx.rng.range(CONFIG.movement.dwellMinMinutes, CONFIG.movement.dwellMaxMinutes));
       break;
     }
     case 'stroll': {
       const pt = randomPointInBounds(ctx);
       setDestination(npc, pt.x, pt.z, null);
       npc.activity = 'strolling';
-      npc.dwellUntilTick = ctx.tick + ctx.rng.range(4, 14);
-      recoverFunWalk(npc);
+      setActivityDuration(npc, ctx.rng.range(4, 14));
       break;
     }
     case 'field': {
       const f = ctx.rng.pick(ctx.layout.fields);
       setDestination(npc, f.x + ctx.rng.range(-f.width / 3, f.width / 3), f.z + ctx.rng.range(-f.depth / 3, f.depth / 3), f.id);
       npc.activity = 'farming';
-      npc.dwellUntilTick = ctx.tick + ctx.rng.range(15, 40);
+      setActivityDuration(npc, ctx.rng.range(15, 40));
       break;
     }
     case 'bench': {
       const b = ctx.rng.pick(ctx.layout.benches);
       setDestination(npc, b.x, b.z, b.id);
       npc.activity = 'sitting';
-      npc.dwellUntilTick = ctx.tick + ctx.rng.range(10, 25);
+      setActivityDuration(npc, ctx.rng.range(10, 25));
       break;
     }
     default: {
       setDestination(npc, home.x + ctx.rng.range(-1.5, 1.5), home.z + ctx.rng.range(-1.5, 1.5), npc.homeId);
       npc.activity = 'idle';
-      npc.dwellUntilTick = ctx.tick + ctx.rng.range(10, 25);
+      setActivityDuration(npc, ctx.rng.range(10, 25));
       break;
     }
   }

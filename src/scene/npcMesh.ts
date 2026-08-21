@@ -166,7 +166,7 @@ export class NpcMesh {
       this.rightArm.rotation.x *= 0.8;
     }
 
-    this.sleepIcon.visible = npc.activity === 'sleeping';
+    this.sleepIcon.visible = npc.activity === 'sleeping' && npc.activityStarted;
     if (this.sleepIcon.visible) {
       this.sleepIcon.position.y = 1.75 + Math.sin(performance.now() * 0.002) * 0.05;
     }
